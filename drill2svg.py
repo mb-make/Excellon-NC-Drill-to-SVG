@@ -1,10 +1,24 @@
 #!/usr/bin/python
 
+from sys import argv
+
+if len(argv) < 2:
+    print "Nope. That's not how to use this script."
+    exit()
+
+filename_read = argv[1]
+
+if len(argv) >= 3:
+    filename_write = argv[2]
+else:
+    filename_write = filename_read[:-4]+".svg"
+
 # import drill file
-drillfile = open("Multi-Nutzen.TXT").read().replace("\r","").split("\n")
+print "Importing Excellon / IPC-NC-349 from '"+filename_read+"' ..."
+drillfile = open(filename_read).read().replace("\r","").split("\n")
 
 # create SVG
-svg = ""
+svg = "<svg>\n"
 
 # diameter in mm
 tool = 1
@@ -14,12 +28,17 @@ y = 0
 def add_circle(x, y, r):
     global svg
     svg += '<circle' \
-            + ' cx="' + str(x/10000) + '"' \
-            + ' cy="' + str(y/10000) + '"' \
+            + ' cx="' + str(x/1000) + '"' \
+            + ' cy="' + str(y/1000) + '"' \
             + ' r="'  + str(r) + '"' \
             + ' stroke="none" fill="red" />\n'
+    print ".",
 
-radius = [0.9000, 1.0000, 1.3000]
+radius = []
+def set_radius(t, r):
+    while len(radius) <= t:
+        radius.append(0)
+    radius[t] = r
 
 # parse drillfile
 for line in drillfile:
@@ -31,13 +50,26 @@ for line in drillfile:
     if line[0] == ';' or line[0] == '%':
         continue
 
-    # change tool
+    # tool
     if line[0] == 'T':
-        try:
-            tool = int(line[1]+line[2])
-        except:
+        q = line.find('F')
+        if q == -1:
+            q = len(line)
+        p = line.find('C')
+        if p > -1:
+            # configure tool
+            n = int(line[1:min(p,q)])
+            c = float(line[p+1:])
+            set_radius(n, c)
+            print "Tool "+str(n)+" diameter = "+str(c)+" mm"
+        else:
+            # switch tool
+            try:
+                tool = int(line[1:])
+                print "Selected tool "+str(tool)+".",
+            except:
+                continue
             continue
-        continue
 
     if line[0] == 'X':
         s = line[1:]
@@ -47,14 +79,17 @@ for line in drillfile:
         x = float(s)
         if p > -1:
             y = float(line[p+1:])
-        add_circle(x, y, radius[tool-1])
+        add_circle(x, y, radius[tool])
         continue
 
     if line[0] == 'Y':
         y = float(line[1:])
-        add_circle(x, y, radius[tool-1])
+        add_circle(x, y, radius[tool])
         continue
 
-print "<svg>\n" \
-    + svg \
-    + "</svg>"
+svg += "</svg>"
+print "Done."
+
+# save to file
+open(filename_write, 'w').write(svg)
+print "SVG written to '"+filename_write+'".'
