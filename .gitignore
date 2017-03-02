@@ -1,3 +1,17 @@
+# temporary
+*~
+.*.swp
+
+# drill files
+*.drl
+*.DRL
+*.txt
+*.TXT
+
+# outputs
+*.svg
+*.SVG
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
