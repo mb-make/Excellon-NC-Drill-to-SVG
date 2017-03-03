@@ -33,7 +33,7 @@ def add_circle(x, y, r):
             + ' cx="' + str(x) + '"' \
             + ' cy="' + str(y) + '"' \
             + ' r="'  + str(r) + '"' \
-            + ' stroke="none" fill="red" />\n'
+            + ' stroke="none" fill="#008080" />\n'
     print ".",
 
 # lookup table for tool diameters
@@ -111,6 +111,7 @@ for line in drillfile:
                 continue
             continue
 
+    # drill hole
     if line[0] == 'X':
         s = line[1:]
         p = line.find('Y')
@@ -137,6 +138,7 @@ for line in drillfile:
         add_circle(x, y, radius[tool])
         continue
 
+    # drill hole
     if line[0] == 'Y':
         # consider the different coordinate system orientations
         y = -parse_number(line[1:])
@@ -150,6 +152,14 @@ for line in drillfile:
         add_circle(x, y, radius[tool])
         continue
 
+# spacing between drill holes and SVG outline
+padding = max(radius) * 1.10
+min_x -= padding
+max_x += padding
+min_y -= padding
+max_y += padding
+
+# generate complete SVG
 svg = '<svg width="'+str(max_x-min_x)+'" height="'+str(max_y-min_y)+'">\n' \
     + '<g transform="translate('+str(-min_x)+','+str(-min_y)+')">\n' \
     + svg \
