@@ -100,7 +100,7 @@ for line in drillfile:
             # configure tool
             n = int(line[1:min(p,q)])
             c = float(line[p+1:])
-            set_radius(n, c)
+            set_radius(n, c/2)
             print "Tool "+str(n)+" diameter = "+str(c)+" mm"
         else:
             # switch tool
