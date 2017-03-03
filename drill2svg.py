@@ -19,7 +19,7 @@ print "Importing Excellon / IPC-NC-349 from '"+filename_read+"' ..."
 drillfile = open(filename_read).read().replace("\r","").split("\n")
 
 # create SVG
-svg = "<svg>\n"
+svg = ""
 
 # diameter in mm
 tool = 1
@@ -60,6 +60,12 @@ def parse_number(s):
     if s[0] == '-':
         c += 1
     return float(s[:c]+'.'+s[c:])
+
+# find bounding box
+min_x = None
+max_x = None
+min_y = None
+max_y = None
 
 # parse drillfile
 for line in drillfile:
@@ -111,17 +117,43 @@ for line in drillfile:
         if p > -1:
             s = line[1:p]
         x = parse_number(s)
+
+        # adjust bounding box
+        if x < min_x or min_x == None:
+            min_x = x
+        if x > max_x or max_x == None:
+            max_x = x
+
         if p > -1:
-            y = parse_number(line[p+1:])
+            # consider the different coordinate system orientations
+            y = -parse_number(line[p+1:])
+
+            # adjust bounding box
+            if y < min_y or min_y == None:
+                min_y = y
+            if y > max_y or max_y == None:
+                max_y = y
+
         add_circle(x, y, radius[tool])
         continue
 
     if line[0] == 'Y':
-        y = parse_number(line[1:])
+        # consider the different coordinate system orientations
+        y = -parse_number(line[1:])
+
+        # adjust bounding box
+        if y < min_y or min_y == None:
+            min_y = y
+        if y > max_y or max_y == None:
+            max_y = y
+
         add_circle(x, y, radius[tool])
         continue
 
-svg += "</svg>"
+svg = '<svg width="'+str(max_x-min_x)+'" height="'+str(max_y-min_y)+'">\n' \
+    + '<g transform="translate('+str(-min_x)+','+str(-min_y)+')">\n' \
+    + svg \
+    + "</g>\n</svg>"
 print "Done."
 
 # save to file
