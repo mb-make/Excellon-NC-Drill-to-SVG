@@ -2,6 +2,7 @@
 
 from sys import argv
 
+# console argument evaluation
 if len(argv) < 2:
     print "Nope. That's not how to use this script."
     exit()
@@ -25,20 +26,40 @@ tool = 1
 x = 0
 y = 0
 
+# append drill hole to SVG
 def add_circle(x, y, r):
     global svg
     svg += '<circle' \
-            + ' cx="' + str(x/1000) + '"' \
-            + ' cy="' + str(y/1000) + '"' \
+            + ' cx="' + str(x) + '"' \
+            + ' cy="' + str(y) + '"' \
             + ' r="'  + str(r) + '"' \
             + ' stroke="none" fill="red" />\n'
     print ".",
 
+# lookup table for tool diameters
 radius = []
 def set_radius(t, r):
     while len(radius) <= t:
         radius.append(0)
     radius[t] = r
+
+# parser for numbers, since they lack commata
+def parse_number(s):
+    if zero_mode == "LZ":
+        # kept leading zeroes, append trailing zeroes
+        while len(s) < digits_before_comma + digits_after_comma:
+            s = s+"0"
+    if zero_mode == "TZ":
+        # kept trailing zeroes, append leading zeroes
+        while len(s) < digits_before_comma + digits_after_comma:
+            if s[0] == '-':
+                s = '-0'+s[1:]
+            else:
+                s = "0"+s
+    c = digits_before_comma
+    if s[0] == '-':
+        c += 1
+    return float(s[:c]+'.'+s[c:])
 
 # parse drillfile
 for line in drillfile:
@@ -46,9 +67,22 @@ for line in drillfile:
     if len(line) == 0:
         continue
 
+    # file format
+    if line.find("FORMAT=") > -1:
+        p = line.find(':')
+        digits_before_comma = int(line[p-1])
+        print "Digits before comma: "+str(digits_before_comma)
+        digits_after_comma  = int(line[p+1])
+        print "Digits after comma:  "+str(digits_after_comma)
+
     # comment
     if line[0] == ';' or line[0] == '%':
         continue
+
+    # number format
+    if line[:6] == 'METRIC':
+        zero_mode = line[7:]
+        print "Zero mode: "+zero_mode
 
     # tool
     if line[0] == 'T':
@@ -76,14 +110,14 @@ for line in drillfile:
         p = line.find('Y')
         if p > -1:
             s = line[1:p]
-        x = float(s)
+        x = parse_number(s)
         if p > -1:
-            y = float(line[p+1:])
+            y = parse_number(line[p+1:])
         add_circle(x, y, radius[tool])
         continue
 
     if line[0] == 'Y':
-        y = float(line[1:])
+        y = parse_number(line[1:])
         add_circle(x, y, radius[tool])
         continue
 
